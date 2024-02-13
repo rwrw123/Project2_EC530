@@ -3,31 +3,31 @@ Sample codes for APIs
 
 1. Data Reading API
 
-> Purpose:
-> To retrieve health metrics and patient data from the system.
-> 
-> Endpoints:
-> Get Patient Data
-> 
->'/api/patient/{patientId}'
-> Method: GET
-> Description: Retrieves patient demographics, health metrics, and historical health data.
-> Parameters: patientId (path), fromDate (query, optional), toDate (query, optional)
-> Response: Patient demographics, list of health metrics (e.g., heart rate, blood pressure, glucose levels), each with timestamps.
-> Get Real-Time Health Metrics
-> 
-> Endpoint: '/api/metrics/realtime/{patientId}'
-> Method: GET
-> Description: Fetches real-time health metrics for a specific patient.
-> Parameters: patientId (path)
-> Response: Current health metrics with timestamp.
-> Get Historical Health Data
-> 
-> Endpoint: '/api/metrics/history/{patientId}'
-> Method: GET
-> Description: Retrieves historical health data for analysis and reporting.
-> Parameters: patientId (path), metricType (query), fromDate (query), toDate (query)
-> Response: Historical health metrics specified by type and date range.
+Purpose:
+To retrieve health metrics and patient data from the system.
+
+  Endpoints:
+  Get Patient Data
+ 
+ '/api/patient/{patientId}'
+  Method: GET
+  Description: Retrieves patient demographics, health metrics, and historical health data.
+  Parameters: patientId (path), fromDate (query, optional), toDate (query, optional)
+  Response: Patient demographics, list of health metrics (e.g., heart rate, blood pressure, glucose levels), each with timestamps.
+  Get Real-Time Health Metrics
+ 
+  Endpoint: '/api/metrics/realtime/{patientId}'
+  Method: GET
+  Description: Fetches real-time health metrics for a specific patient.
+  Parameters: patientId (path)
+  Response: Current health metrics with timestamp.
+  Get Historical Health Data
+ 
+  Endpoint: '/api/metrics/history/{patientId}'
+  Method: GET
+  Description: Retrieves historical health data for analysis and reporting.
+  Parameters: patientId (path), metricType (query), fromDate (query), toDate (query)
+  Response: Historical health metrics specified by type and date range.
 
 2. Device Interface API
 Purpose:
