@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timezone
 import logging
 import json
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
@@ -16,24 +17,16 @@ class StructuredMessage:
 
     def __str__(self):
         return f"{self.message} | {json.dumps(self.kwargs)}"
-    
-# Mock in-memory databases 
-users = {}
-devices = {}
-appointments = []
-messages = []
 
-# Generate sequential IDs
-def generate_id(entity_dict):
-    """Generates a sequential integer ID."""
-    if entity_dict:
-        return max(entity_dict.keys()) + 1
-    else:
-        return 1
+# MongoDB connection
+client = MongoClient('localhost', 27017)
+db = client['health_monitoring_db']
 
-def add_or_update_entity(entity_dict, entity_id, data):
-    """Adds or updates an entity in the given dictionary."""
-    entity_dict[entity_id] = data
+# MongoDB collections
+users = db.users
+devices = db.deviced
+appointments = db.appointments
+messages = db.messages
     
 @app.route('/')
 def index():
@@ -45,17 +38,16 @@ def add_user():
     data = request.json
     if not all(k in data for k in ['name', 'email']):
         return jsonify({"error": "Missing name or email"}), 400
-    user_id = generate_id(users)
-    add_or_update_entity(users, user_id, {"name": data['name'], "email": data['email'], "roles": []})
-    return jsonify({"userId": user_id, "status": "success"})
+    user_id = users.insert_one({"name": data['name'], "email": data['email'], "roles": []}).inserted_id
+    return jsonify({"userId": str(user_id), "status": "success"})
 
 @app.route('/users/<int:user_id>/assignRole', methods=['POST'])
 def assign_role(user_id):
     data = request.json
     if 'roles' not in data:
         return jsonify({"error": "Missing roles"}), 400
-    if user_id in users:
-        users[user_id]['roles'] = data['roles']
+    result = users.update_one({"_id": user_id}, {"$set": {"roles": data['roles']}})
+    if result.matched_count:
         return jsonify({"status": "success"})
     else:
         return jsonify({"error": "User not found"}), 404
@@ -63,8 +55,7 @@ def assign_role(user_id):
 @app.route('/devices/register', methods=['POST'])
 def register_device():
     data = request.json
-    device_id = generate_id(devices)
-    add_or_update_entity(devices, device_id, {"deviceId": data['deviceId'], "type": data['type'], "status": "enabled"})
+    device_id = devices.insert_one({"deviceId": data['deviceId'], "type": data['type'], "status": "enabled"}).inserted_id
     return jsonify({"status": "success"})
 
 @app.route('/patients/<int:patient_id>/measurements', methods=['POST'])
@@ -96,30 +87,31 @@ def generate_alert(patient_id, measurement_type, value, threshold):
                                    value=value,
                                    threshold=threshold))
 
-@app.route('/patients/<int:patient_id>/appointments/book', methods=['POST'])
+@app.route('/patients/<patient_id>/appointments/book', methods=['POST'])
 def book_appointment(patient_id):
     data = request.json
-    appointment_id = len(appointments) + 1
-    appointments.append({"appointmentId": appointment_id, "patientId": patient_id, "mpId": data['mpId'], "time": data['time']})
-    return jsonify({"appointmentId": appointment_id, "status": "success"})
+    appointment_id = appointments.insert_one({"patientId": patient_id, "mpId": data['mpId'], "time": data['time']}).inserted_id
+    return jsonify({"appointmentId": str(appointment_id), "status": "success"})
 
-@app.route('/patients/<int:patient_id>/appointments', methods=['GET'])
+@app.route('/patients/<patient_id>/appointments', methods=['GET'])
 def view_appointments(patient_id):
-    patient_appointments = [appointment for appointment in appointments if appointment['patientId'] == patient_id]
+    patient_appointments = list(appointments.find({"patientId": patient_id}))
+    for appointment in patient_appointments:
+        appointment['_id'] = str(appointment['_id'])  # Convert ObjectId to string
     return jsonify(patient_appointments)
 
-@app.route('/chat/<int:patient_id>', methods=['POST'])
+@app.route('/chat/<patient_id>', methods=['POST'])
 def post_message(patient_id):
     data = request.json
-    message = {"patientId": patient_id, "content": data['content'], "timestamp": datetime.now(timezone.utc).isoformat()}
-    messages.append(message)
+    message_id = messages.insert_one({"patientId": patient_id, "content": data['content'], "timestamp": datetime.now(timezone.utc).isoformat()}).inserted_id
     return jsonify({"status": "success"})
 
-@app.route('/chat/<int:patient_id>', methods=['GET'])
+@app.route('/chat/<patient_id>', methods=['GET'])
 def get_chat_history(patient_id):
-    chat_history = [message for message in messages if message['patientId'] == patient_id]
+    chat_history = list(messages.find({"patientId": patient_id }))
+    for message in chat_history:
+        message['_id'] = str(message['_id'])  # Convert ObjectId to string for JSON response
     return jsonify(chat_history)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
