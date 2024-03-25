@@ -10,7 +10,7 @@ This API provides a comprehensive solution for managing health data, including u
 - PyMongo
 - MongoDB
 
-###Usage
+### Usage
 The Health Monitoring API supports the following endpoints:
 
 POST /users/add: Add a new user.
