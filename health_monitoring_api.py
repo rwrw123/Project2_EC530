@@ -31,8 +31,8 @@ def add_user():
     if not all(k in data for k in ['name', 'email']):
         return jsonify({"error": "Missing name or email"}), 400
     result = mongo.db.users.insert_one({
-        "name": data['name']
-        "email": data['email']
+        "name": data['name'],
+        "email": data['email'],
         "roles": []
     })
     return jsonify({"userId": str(result.inserted_id), "status": "success"})
@@ -52,7 +52,7 @@ def assign_role(user_id):
 def register_device():
     data = request.json
     result = mongo.db.devices.insert_one({"deviceId": data['deviceId'], "type": data['type'], "registration_date": datetime.now(timezone.utc)})
-    return jsonify({"deviceId";str(result.inserted_id), "status": "success"})
+    return jsonify({"deviceId":str(result.inserted_id), "status": "success"})
 
 @app.route('/patients/<int:patient_id>/measurements/add', methods=['POST'])
 def submit_measurement(patient_id):
